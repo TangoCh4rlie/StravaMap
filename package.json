@@ -9,11 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "leaflet": "^1.9.4",
+    "maplibre-gl": "^5.8.0",
     "vue": "^3.5.21"
   },
   "devDependencies": {
-    "@types/leaflet": "^1.9.20",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/tsconfig": "^0.8.1",
     "typescript": "~5.8.3",
