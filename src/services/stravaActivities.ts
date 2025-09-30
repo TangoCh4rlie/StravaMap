@@ -83,11 +83,17 @@ export class StravaActivitiesService {
         }
       }
 
-      // Activities are already sorted by Strava API from most recent to oldest
+      // Ensure activities are sorted by date (most recent first)
+      const sortedActivities = allActivities.sort((a, b) => {
+        const dateA = new Date(a.start_date_local);
+        const dateB = new Date(b.start_date_local);
+        return dateB.getTime() - dateA.getTime();
+      });
+
       console.log(
         `Successfully fetched ${allActivities.length} total activities.`,
       );
-      return allActivities;
+      return sortedActivities;
     } catch (error) {
       console.error("Error fetching all activities:", error);
       throw new Error(
@@ -104,9 +110,16 @@ export class StravaActivitiesService {
   ): Promise<StravaActivity[]> {
     const after = Math.floor((Date.now() - days * 24 * 60 * 60 * 1000) / 1000);
 
-    return this.getActivities({
+    const activities = await this.getActivities({
       after,
       per_page: 200, // Get more activities for recent period
+    });
+
+    // Sort activities by start date (most recent first)
+    return activities.sort((a, b) => {
+      const dateA = new Date(a.start_date_local);
+      const dateB = new Date(b.start_date_local);
+      return dateB.getTime() - dateA.getTime();
     });
   }
 
@@ -165,12 +178,23 @@ export class StravaActivitiesService {
         }
       }
 
+      // Sort activities by date (most recent first)
+      const sortedActivities = allActivities.sort((a, b) => {
+        const dateA = new Date(a.start_date_local);
+        const dateB = new Date(b.start_date_local);
+        return dateB.getTime() - dateA.getTime();
+      });
+
       // Final progress update
       if (onProgress) {
-        onProgress(allActivities.length, allActivities.length, allActivities);
+        onProgress(
+          sortedActivities.length,
+          sortedActivities.length,
+          sortedActivities,
+        );
       }
 
-      return allActivities;
+      return sortedActivities;
     } catch (error) {
       console.error("Error fetching all activities with progress:", error);
       throw error;

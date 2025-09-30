@@ -35,16 +35,24 @@ export const MAPTILER_CONFIG = {
 };
 ```
 
-## 4. Styles disponibles
+## 4. Vue par défaut
 
-L'application propose 5 styles de carte :
+L'application démarre avec une vue d'ensemble :
+
+- **Centre** : Paris, France
+- **Zoom** : Niveau 2 (vue très large)
+- **Avantage** : Vision globale pour voir toutes vos activités réparties géographiquement
+
+## 5. Styles disponibles
+
+L'application propose 4 styles de carte :
 
 - **Topographic** (par défaut) : Cartes topographiques détaillées avec courbes de niveau ✨ 3D
 - **Outdoor** : Optimisé pour les activités outdoor avec sentiers
 - **Hybrid** : Images satellite + étiquettes avec rendu 3D ✨ 3D
 - **Streets** : Style urbain classique
 
-## 5. Fonctionnalités
+## 6. Fonctionnalités
 
 ### Contrôles 3D
 
@@ -89,14 +97,14 @@ L'application propose 5 styles de carte :
 - **Déplacement** : Glisser simple pour se déplacer
 - **Raccourcis** : R (reset), ↑/↓ (inclinaison par paliers de 10°)
 
-## 6. Limites du plan gratuit
+## 7. Limites du plan gratuit
 
 - 100 000 chargements de tuiles/mois
 - Toutes les fonctionnalités disponibles
 - Pas de filigrane
 - Support communautaire
 
-## 7. Migration depuis Leaflet
+## 8. Migration depuis Leaflet
 
 La migration preserve toutes les fonctionnalités :
 
@@ -119,7 +127,7 @@ La migration preserve toutes les fonctionnalités :
 - **UX 3D** : Navigation intuitive avec feedback visuel et raccourcis
 - **Moderne** : Basé sur MapLibre GL JS (fork open-source de Mapbox GL JS)
 
-## Dépannage
+## 9. Dépannage
 
 ### La carte ne s'affiche pas
 
@@ -139,7 +147,7 @@ La migration preserve toutes les fonctionnalités :
 - Les clés MapTiler fonctionnent depuis localhost
 - Configurez les domaines autorisés dans MapTiler Cloud
 
-## Ressources
+## 10. Ressources
 
 - [Documentation MapTiler](https://docs.maptiler.com/)
 - [MapLibre GL JS](https://maplibre.org/maplibre-gl-js-docs/)

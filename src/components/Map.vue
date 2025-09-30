@@ -17,21 +17,10 @@
                 class="style-selector"
             >
                 <option value="TOPO">Topographic</option>
-                <option value="OUTDOOR">Outdoor</option>
                 <option value="HYBRID">Hybrid</option>
+                <option value="OUTDOOR">Outdoor</option>
                 <option value="STREETS">Streets</option>
             </select>
-        </div>
-
-        <!-- Camera Angle Indicator -->
-        <div v-if="is3DEnabled" class="camera-info">
-            <div class="camera-angle">
-                <span class="angle-icon">📐</span>
-                <span class="angle-text">{{ Math.round(cameraAngle) }}°</span>
-            </div>
-            <div class="camera-help">
-                Shift + glisser pour incliner • R pour réinitialiser
-            </div>
         </div>
     </div>
 </template>
@@ -53,7 +42,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    initialCenter: () => [48.8566, 2.3522], // Paris
+    initialCenter: () => [2.3522, 48.8566], // Paris [longitude, latitude]
     initialZoom: 6,
 });
 
@@ -69,6 +58,8 @@ let map: maplibregl.Map | null = null;
 let currentTrackSource: string | null = null;
 let currentTrackLayer: string | null = null;
 let currentMarkers: maplibregl.Marker[] = [];
+let allTracks: Map<string, { sourceId: string; layerId: string }> = new Map();
+let allTrackMarkers: maplibregl.Marker[] = [];
 
 // Methods
 const initializeMap = async () => {
@@ -326,12 +317,16 @@ const addTrack = (
         opacity?: number;
         activityName?: string;
         activityType?: string;
+        multiple?: boolean;
     } = {},
 ) => {
     if (!map || coordinates.length === 0) return;
 
-    // Remove existing track
-    removeCurrentTrack();
+    // Remove existing track only if not in multiple mode
+    if (!options.multiple) {
+        removeCurrentTrack();
+        clearAllTracks();
+    }
 
     // Default options
     const trackOptions = {
@@ -385,9 +380,15 @@ const addTrack = (
         });
 
         // Store references and data
-        currentTrackSource = sourceId;
-        currentTrackLayer = layerId;
-        storedTrackData = { coordinates, options };
+        if (options.multiple) {
+            // Store in all tracks for multiple mode
+            allTracks.set(trackId, { sourceId, layerId });
+        } else {
+            // Store as current track for single mode
+            currentTrackSource = sourceId;
+            currentTrackLayer = layerId;
+            storedTrackData = { coordinates, options };
+        }
 
         // Fit map to track bounds
         const bounds = new maplibregl.LngLatBounds();
@@ -435,6 +436,64 @@ const addTrack = (
 };
 
 /**
+ * Add multiple tracks to the map
+ */
+const addMultipleTracks = async (
+    tracksData: Array<{
+        coordinates: [number, number][];
+        options: {
+            color?: string;
+            weight?: number;
+            opacity?: number;
+            activityName?: string;
+            activityType?: string;
+        };
+    }>,
+) => {
+    if (!map) return;
+
+    // Clear existing tracks
+    clearAllTracks();
+
+    // Add all tracks
+    for (const trackData of tracksData) {
+        addTrack(trackData.coordinates, {
+            ...trackData.options,
+            multiple: true,
+        });
+    }
+
+    console.log(`Added ${tracksData.length} tracks to map`);
+};
+
+/**
+ * Clear all tracks from map
+ */
+const clearAllTracks = () => {
+    if (!map) return;
+
+    // Remove all tracks stored in allTracks
+    for (const [trackId, { sourceId, layerId }] of allTracks) {
+        try {
+            if (map.getLayer(layerId)) {
+                map.removeLayer(layerId);
+            }
+            if (map.getSource(sourceId)) {
+                map.removeSource(sourceId);
+            }
+        } catch (error) {
+            console.warn(`Error removing track ${trackId}:`, error);
+        }
+    }
+
+    allTracks.clear();
+
+    // Also clear all track markers
+    allTrackMarkers.forEach((marker) => marker.remove());
+    allTrackMarkers = [];
+};
+
+/**
  * Remove current track from map
  */
 const removeCurrentTrack = () => {
@@ -463,6 +522,7 @@ const removeCurrentTrack = () => {
 const addTrackMarkers = (
     coordinates: [number, number][],
     activityName?: string,
+    options: { multiple?: boolean } = {},
 ) => {
     if (!map || coordinates.length === 0) return;
 
@@ -521,7 +581,11 @@ const addTrackMarkers = (
         .addTo(map);
 
     // Store markers for cleanup
-    currentMarkers.push(startMarker, endMarker);
+    if (options.multiple) {
+        allTrackMarkers.push(startMarker, endMarker);
+    } else {
+        currentMarkers.push(startMarker, endMarker);
+    }
 
     return { startMarker, endMarker };
 };
@@ -539,6 +603,7 @@ const clearMarkers = () => {
  */
 const clearMap = () => {
     removeCurrentTrack();
+    clearAllTracks();
     clearMarkers();
 };
 
@@ -575,7 +640,9 @@ defineExpose({
     setView,
     fitBounds,
     addTrack,
+    addMultipleTracks,
     removeCurrentTrack,
+    clearAllTracks,
     addTrackMarkers,
     clearMap,
     clearMarkers,
@@ -766,5 +833,19 @@ onUnmounted(() => {
     padding: 4px 6px;
     font-size: 11px;
     color: #374151;
+}
+
+/* Cacher zoom et boussole sur mobile */
+@media (max-width: 768px) {
+    /* Cacher les boutons zoom */
+    :deep(.maplibregl-ctrl-zoom-in),
+    :deep(.maplibregl-ctrl-zoom-out) {
+        display: none !important;
+    }
+
+    /* Cacher la boussole */
+    :deep(.maplibregl-ctrl-compass) {
+        display: none !important;
+    }
 }
 </style>

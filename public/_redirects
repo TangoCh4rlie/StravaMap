@@ -1,0 +1,14 @@
+# Cloudflare Pages SPA routing
+# Redirect all routes to index.html for client-side routing
+/* /index.html 200
+
+# Specific redirects for auth callback (optional, handled by SPA routing)
+/auth/strava/callback /index.html 200
+
+# API endpoints should not be redirected (if any in the future)
+/api/* 404
+
+# Static assets should be served directly
+/assets/* 200
+/favicon.ico 200
+/vite.svg 200

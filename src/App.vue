@@ -22,17 +22,35 @@
             >
                 <div class="activities-panel-content">
                     <div class="activities-header">
-                        <h3>Mes activités</h3>
-                        <button
-                            class="close-panel-btn"
-                            @click="closeActivitiesPanel"
-                        >
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                        <div class="activities-header-top">
+                            <h3>Mes activités</h3>
+                            <button
+                                class="close-panel-btn"
+                                @click="closeActivitiesPanel"
+                            >
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Show all activities toggle -->
+                        <div class="map-options">
+                            <label class="show-all-toggle">
+                                <input
+                                    type="checkbox"
+                                    v-model="showAllActivities"
+                                    @change="handleToggleShowAll"
                                 />
-                            </svg>
-                        </button>
+                                <span class="checkmark"></span>
+                                <span class="label-text"
+                                    >Afficher toutes les traces GPX des
+                                    activités</span
+                                >
+                            </label>
+                        </div>
                     </div>
                     <div class="activities-scroll-container">
                         <ActivitiesList
@@ -54,6 +72,17 @@
                 <div class="track-loading-content">
                     <div class="loading-spinner"></div>
                     <span>Chargement de la trace GPS...</span>
+                </div>
+            </div>
+
+            <!-- Loading indicator for all activities -->
+            <div
+                v-if="isLoadingActivities && showAllActivities"
+                class="track-loading"
+            >
+                <div class="track-loading-content">
+                    <div class="loading-spinner"></div>
+                    <span>Chargement de toutes les activités...</span>
                 </div>
             </div>
 
@@ -107,14 +136,18 @@ import Map from "./components/Map.vue";
 
 // Reactive state
 const authenticatedAthlete = ref<StravaAthlete | null>(null);
+const isLoadingActivities = ref(false);
+const activities = ref<StravaActivity[]>([]);
 const showActivitiesPanel = ref(false);
 const mapComponent = ref();
 const isLoadingTrack = ref(false);
 const trackError = ref<string | null>(null);
+const showAllActivities = ref(false); // Default to not showing all activities
+const selectedActivity = ref<StravaActivity | null>(null);
 
 // Map configuration
-const mapCenter = ref<[number, number]>([46.603354, 1.888334]); // Centre de la France
-const mapZoom = ref(6);
+const mapCenter = ref<[number, number]>([2.3522, 48.8566]); // Paris [longitude, latitude]
+const mapZoom = ref(5); // Low zoom for wide view
 
 // Computed
 const isAuthenticated = computed(() => {
@@ -149,8 +182,30 @@ const closeActivitiesPanel = () => {
     showActivitiesPanel.value = false;
 };
 
+const handleToggleShowAll = () => {
+    const showAll = showAllActivities.value;
+    showAllActivities.value = showAll;
+
+    if (showAll) {
+        // Show all activities - load them if needed
+        selectedActivity.value = null;
+        loadActivitiesAndDisplayAll();
+    } else {
+        // Clear map and show only selected activity if any
+        if (mapComponent.value) {
+            mapComponent.value.clearMap();
+        }
+        if (selectedActivity.value) {
+            loadActivityTrack(selectedActivity.value);
+        }
+    }
+};
+
 const handleActivitySelect = async (activity: StravaActivity) => {
     console.log("Activity selected:", activity);
+
+    // Store selected activity
+    selectedActivity.value = activity;
 
     // Close activities panel
     showActivitiesPanel.value = false;
@@ -158,8 +213,102 @@ const handleActivitySelect = async (activity: StravaActivity) => {
     // Clear any previous errors
     trackError.value = null;
 
+    if (showAllActivities.value) {
+        // If showing all activities, switch to single activity mode
+        showAllActivities.value = false;
+    }
+
     // Load and display GPS track
     await loadActivityTrack(activity);
+};
+
+const displayAllActivities = async () => {
+    if (!activities.value.length || !mapComponent.value) return;
+
+    console.log(`Displaying ${activities.value.length} activities on map`);
+
+    // Clear existing tracks
+    mapComponent.value.clearMap();
+
+    // Display all activities with different colors
+    const colors = [
+        "#FC4C02",
+        "#E63946",
+        "#F77F00",
+        "#FCBF49",
+        "#EAE2B7",
+        "#D62828",
+        "#003566",
+        "#0077B6",
+        "#00B4D8",
+        "#90E0EF",
+        "#8338EC",
+        "#3A86FF",
+    ];
+
+    let tracksData = [];
+    const maxTracksToShow = 50; // Limit for performance
+
+    for (const [index, activity] of activities.value.entries()) {
+        if (tracksData.length >= maxTracksToShow) break;
+
+        try {
+            // Get GPS data for activity using the same method as loadActivityTrack
+            const coordinates =
+                await StravaActivitiesService.getActivityGPSTrack(activity.id);
+
+            if (coordinates.length > 0) {
+                const color = colors[index % colors.length];
+
+                tracksData.push({
+                    coordinates,
+                    options: {
+                        color,
+                        weight: 2,
+                        opacity: 0.7,
+                        activityName: activity.name,
+                        activityType: activity.type,
+                    },
+                });
+            }
+        } catch (error) {
+            console.warn(
+                `Failed to load track for activity ${activity.name}:`,
+                error,
+            );
+        }
+    }
+
+    // Add all tracks at once using the new method
+    if (tracksData.length > 0) {
+        mapComponent.value.addMultipleTracks(tracksData);
+    }
+
+    console.log(`Successfully displayed ${tracksData.length} tracks on map`);
+};
+
+const loadActivitiesAndDisplayAll = async () => {
+    if (activities.value.length > 0) {
+        // Activities already loaded, just display them
+        displayAllActivities();
+        return;
+    }
+
+    // Load activities first if not already loaded
+    isLoadingActivities.value = true;
+    try {
+        const loadedActivities =
+            await StravaActivitiesService.getAllActivities();
+        activities.value = loadedActivities;
+
+        if (showAllActivities.value) {
+            await displayAllActivities();
+        }
+    } catch (error) {
+        console.error("Failed to load activities:", error);
+    } finally {
+        isLoadingActivities.value = false;
+    }
 };
 
 const loadActivityTrack = async (activity: StravaActivity) => {
@@ -219,9 +368,10 @@ const loadActivityTrack = async (activity: StravaActivity) => {
     }
 };
 
-const loadUserData = () => {
+const loadUserData = async () => {
     if (StravaAuthService.isAuthenticated()) {
         authenticatedAthlete.value = StravaAuthService.getAthlete();
+        // Don't load all activities by default - let user choose
     }
 };
 
@@ -311,11 +461,17 @@ body {
 
 .activities-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 1rem;
     padding: 1.5rem;
     border-bottom: 1px solid #e2e8f0;
     background: #f7fafc;
+}
+
+.activities-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .activities-header h3 {
@@ -377,6 +533,21 @@ body {
     .activities-header h3 {
         font-size: 1.125rem;
     }
+
+    .show-all-toggle {
+        font-size: 0.8125rem;
+    }
+
+    .checkmark {
+        width: 0.875rem;
+        height: 0.875rem;
+    }
+
+    .show-all-toggle input[type="checkbox"]:checked + .checkmark::after {
+        left: 3px;
+        width: 3px;
+        height: 6px;
+    }
 }
 
 /* Activities scroll container */
@@ -403,6 +574,66 @@ body {
 
 .activities-panel :deep(.activities-header) {
     display: none; /* Hide duplicate header */
+}
+
+.map-options {
+    padding: 0;
+}
+
+.show-all-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.875rem;
+    color: #4a5568;
+    font-weight: 500;
+}
+
+.show-all-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.checkmark {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #cbd5e0;
+    border-radius: 3px;
+    background: white;
+    position: relative;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.show-all-toggle input[type="checkbox"]:checked + .checkmark {
+    background: #fc4c02;
+    border-color: #fc4c02;
+}
+
+.show-all-toggle input[type="checkbox"]:checked + .checkmark::after {
+    content: "";
+    position: absolute;
+    top: 1px;
+    left: 4px;
+    width: 4px;
+    height: 7px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.show-all-toggle:hover .checkmark {
+    border-color: #fc4c02;
+    background: #fef5f5;
+}
+
+.show-all-toggle input[type="checkbox"]:checked:hover + .checkmark {
+    background: #e63946;
+}
+
+.label-text {
+    flex: 1;
 }
 
 .activities-scroll-container::-webkit-scrollbar {

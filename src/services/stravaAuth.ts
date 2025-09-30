@@ -1,4 +1,5 @@
 import type { StravaTokenResponse, StravaAuthState } from "../types/strava";
+import { getEnvironmentConfig } from "../config/env";
 
 export class StravaAuthService {
   private static readonly STRAVA_BASE_URL = "https://www.strava.com/api/v3";
@@ -8,8 +9,6 @@ export class StravaAuthService {
     "https://www.strava.com/oauth/token";
 
   private static readonly CLIENT_ID = import.meta.env.VITE_STRAVA_CLIENT_ID;
-  private static readonly REDIRECT_URI = import.meta.env
-    .VITE_STRAVA_REDIRECT_URI;
 
   private static readonly STORAGE_KEY = "strava_auth_state";
 
@@ -17,10 +16,11 @@ export class StravaAuthService {
    * Generate the Strava OAuth authorization URL
    */
   static getAuthorizationUrl(): string {
+    const config = getEnvironmentConfig();
     const params = new URLSearchParams({
       client_id: this.CLIENT_ID,
       response_type: "code",
-      redirect_uri: this.REDIRECT_URI,
+      redirect_uri: config.stravaRedirectUri,
       approval_prompt: "force",
       scope: "read,activity:read_all",
     });

@@ -23,8 +23,8 @@ export const MAPTILER_CONFIG = {
   TERRAIN_SOURCE: "https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json",
 
   // Default map settings
-  DEFAULT_CENTER: [2.3522, 48.8566], // Paris
-  DEFAULT_ZOOM: 6,
+  DEFAULT_CENTER: [2.3522, 48.8566], // Paris [longitude, latitude]
+  DEFAULT_ZOOM: 2, // Very low zoom for wide view
   MAX_ZOOM: 18,
 
   // 3D Camera settings

@@ -10,13 +10,14 @@ Une application web moderne pour visualiser toutes vos activités Strava sur une
 ## 🚀 Fonctionnalités
 
 - **Authentification Strava** : Connexion sécurisée via OAuth2
-- **Visualisation complète** : Affichage de toutes vos activités avec pagination automatique
+- **Visualisation intelligente** : Affichage des activités récentes par défaut, puis toutes activités sur demande
 - **Cartes haute qualité** : Rendu vectoriel avec 5 styles professionnels (Terrain, Outdoor, Satellite, Streets, Topo)
 - **Traces GPS interactives** : Affichage des parcours avec marqueurs de départ/arrivée
-- **Interface responsive** : Optimisée pour desktop et mobile
+- **Affichage multiple** : Visualisation de toutes les activités simultanément avec checkbox de contrôle
+- **Interface responsive** : Optimisée pour desktop et mobile avec contrôles adaptés
 - **Vue 3D** : Rendu du relief avec contrôle d'exagération
-- **Filtres avancés** : Par type d'activité et période
-- **Performance optimisée** : Chargement progressif avec indicateurs
+- **Filtres avancés** : Par type d'activité et période (récentes vs toutes)
+- **Performance optimisée** : Chargement progressif avec indicateurs et tri intelligent
 
 ## 🛠 Technologies
 
@@ -83,11 +84,21 @@ pnpm preview
 
 1. **Connexion** : Cliquez sur "Se connecter avec Strava"
 2. **Autorisations** : Acceptez les permissions de lecture
-3. **Chargement** : Vos activités se chargent automatiquement
+3. **Chargement intelligent** : Les activités récentes (30 jours) s'affichent automatiquement
 4. **Navigation** :
-   - Sélectionnez une activité pour voir sa trace
-   - Changez de style de carte avec le sélecteur
-   - Activez la vue 3D avec le contrôle terrain
+   - **Activités récentes** : Onglet par défaut (30 derniers jours, triées du plus récent au plus ancien)
+   - **Toutes activités** : Cliquez sur "Toutes" pour charger l'ensemble de vos activités
+   - **Affichage multiple** : Cochez "Afficher toutes les traces GPX" pour voir toutes les traces simultanément
+   - **Activité isolée** : Cliquez sur une activité pour la voir seule (désactive l'affichage multiple)
+   - **Styles de carte** : Changez avec le sélecteur en bas à droite
+   - **Mode 3D** : Activez avec le bouton 🏔️
+
+## 🎯 Comportements par défaut
+
+- **Au démarrage** : Seules les activités récentes (30 jours) sont chargées pour une meilleure performance
+- **Affichage des traces** : Aucune trace n'est affichée par défaut - l'utilisateur choisit quoi visualiser
+- **Tri intelligent** : Les activités sont toujours triées du plus récent au plus ancien
+- **Mobile optimisé** : Boutons zoom et boussole cachés automatiquement sur mobile (≤ 768px)
 
 ## 🗺 Styles de carte
 
@@ -121,10 +132,11 @@ pnpm preview
 
 ### Interface
 
-- Panel d'activités coulissant
-- Indicateurs de progression
-- Gestion d'erreurs robuste
-- Mode sombre adaptatif
+- **Panel d'activités** : Coulissant avec checkbox "Afficher toutes les activités"
+- **Vue multiple** : Jusqu'à 50 activités simultanées avec couleurs distinctes
+- **Indicateurs** : Progression de chargement pour traces individuelles et globales
+- **Gestion d'erreurs** : Messages contextuels robustes
+- **Performance** : Limite intelligente pour éviter la surcharge
 
 ## 🏗 Architecture
 
@@ -145,9 +157,7 @@ src/
 └── App.vue            # Composant racine
 ```
 
-## 🔧 Configuration avancée
-
-### Variables d'environnement
+### Configuration avancée
 
 ```bash
 # MapTiler
@@ -157,6 +167,15 @@ VITE_MAPTILER_API_KEY=your_key_here
 VITE_STRAVA_CLIENT_ID=your_client_id
 VITE_STRAVA_CLIENT_SECRET=your_secret
 ```
+
+### Vue d'ensemble par défaut
+
+L'application démarre avec :
+
+- **Centre** : Paris, France
+- **Zoom** : Niveau 2 (vue très large de l'Europe/monde)
+- **Affichage** : Toutes les activités visibles simultanément (jusqu'à 50)
+- **Avantage** : Vision globale immédiate de vos aventures et voyages
 
 ### Personnalisation des styles
 

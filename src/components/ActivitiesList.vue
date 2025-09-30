@@ -96,10 +96,15 @@
 
         <div v-else-if="activities.length === 0" class="empty-state">
             <div class="empty-icon">🏃</div>
-            <h4>Aucune activité trouvée</h4>
-            <p>
-                Il semble que vous n'ayez pas d'activités récentes ou qu'elles
-                ne soient pas visibles.
+            <h4 v-if="loadingMode === 'recent'">Aucune activité récente</h4>
+            <h4 v-else>Aucune activité trouvée</h4>
+            <p v-if="loadingMode === 'recent'">
+                Vous n'avez pas d'activités dans les 30 derniers jours. Essayez
+                l'onglet "Toutes" pour voir l'ensemble de vos activités.
+            </p>
+            <p v-else>
+                Il semble que vous n'ayez pas d'activités Strava ou qu'elles ne
+                soient pas visibles avec les permissions actuelles.
             </p>
         </div>
 
